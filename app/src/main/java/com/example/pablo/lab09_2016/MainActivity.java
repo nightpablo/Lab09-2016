@@ -16,84 +16,84 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener{
 
 
     private SensorManager mSensorManager;
     private Sensor mSensor;
+    private ListView listView_Acelerómetro;
     private float[] gravity;
     private float[] linear_aceleration;
+    ArrayAdapter<String> adaptador;
+    String[] sistemas;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//revisar
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        //this.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//revisar
 
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.registerListener(this,
-                mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION),
+                mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
                 SensorManager.SENSOR_DELAY_NORMAL);
-
-
+        listView_Acelerómetro = (ListView) findViewById(R.id.listView_Acelerómetro);
+        sistemas = new String[]{"Hora Maximo X:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0",
+                                "Hora Maximo Y:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0",
+                                    "Hora Maximo Z:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0"};
+        //sistemas[0]="Hora Maximo X:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0";
+        //sistemas[1]="Hora Maximo Y:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0";
+        //sistemas[2]="Hora Maximo Z:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: 0";
+        adaptador = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, sistemas);
+        listView_Acelerómetro.setAdapter(adaptador);
 
         gravity = new float[3];
-        gravity[0] = 98/10;
-        gravity[1] = 98/10;
-        gravity[2] = 98/10;
         linear_aceleration = new float[3];
-        Log.i("X: ","q onda");
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        for (int i = 0; i < 3; i++) {
+            gravity[i]=(float)9.8;
+            linear_aceleration[i]=0;
         }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        Log.i("X: ","q onda");
         synchronized (this) {
-            final float alpha = (float) 0.8;
-            for (int i = 0; i < 3; i++) {
-                gravity[i] = alpha * gravity[i] + (1 - alpha) * event.values[i];
-                linear_aceleration[i] = event.values[i] - gravity[i];
+            switch (event.sensor.getType()) {
+                case Sensor.TYPE_ACCELEROMETER:
+                    final float alpha = (float) 0.8;
+                    for (int i = 0; i < 3; i++) {
+                        gravity[i] = alpha * gravity[i] + (1 - alpha) * event.values[i];
+                        if((event.values[i] - gravity[i])-linear_aceleration[i]>0) {
+                            linear_aceleration[i] = event.values[i] - gravity[i];
+                            modificarTexto(i,linear_aceleration[i]);
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
-            Log.i("X: ", "" + linear_aceleration[0]);
-            Log.i("Y: ", "" + linear_aceleration[1]);
-            Log.i("Z: ", "" + linear_aceleration[2]);
-            Log.d("X: ", "" + linear_aceleration[0]);
-            Log.d("Y: ", "" + linear_aceleration[1]);
-            Log.d("Z: ", "" + linear_aceleration[2]);
         }
+    }
+
+    private void modificarTexto(int pos,float Magnitud){
+        switch (pos){
+            case 0:
+                sistemas[0] = "Hora Maximo X:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: "+Magnitud;
+                break;
+            case 1:
+                sistemas[1]="Hora Maximo Y:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: "+Magnitud;
+                break;
+            case 2:
+                sistemas[2]="Hora Maximo Z:"+new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date(System.currentTimeMillis()))+"\nMagnitud: "+Magnitud;
+            default:
+                break;
+        }
+        adaptador.notifyDataSetChanged();
     }
 
     @Override
